@@ -1,7 +1,7 @@
 import heapq
 import sys
 
-# sys.stdin = open("input1.txt", "r")
+# sys.stdin = open("input2.txt", "r")
 input = sys.stdin.readline
 N, M, P, C, D = map(int, input().rstrip().split())
 santas = [None for _ in range(P)]
@@ -134,6 +134,8 @@ def push_santa(src_pos, vec, force, pushed_santa_idx, turn_th):
     ci, cj = src_pos[0], src_pos[1]
     santa_pos = (santas[pushed_santa_idx][1], santas[pushed_santa_idx][2])
     ni, nj = ci + vec[0] * force, cj + vec[1] * force
+    # 일단 산타가 있는 곳은 None으로 만든다
+    board[santa_pos[0]][santa_pos[1]] = None
     # 산타가 날라 갔는데 거기가 board밖이라면?
     if OOB(ni, nj):
         is_retired[pushed_santa_idx] = True
@@ -283,5 +285,6 @@ for i in range(M):
     if is_game_over():
         break
     plus_one_santa_scores()
+
 for i in range(P):
     print(santa_scores[i], end=" ")
