@@ -1,7 +1,7 @@
 import heapq
 import sys
 
-# sys.stdin = open("input2.txt", "r")
+# sys.stdin = open("input5.txt", "r")
 input = sys.stdin.readline
 N, M, P, C, D = map(int, input().rstrip().split())
 santas = [None for _ in range(P)]
@@ -268,10 +268,10 @@ def print_board():
         print()
 
 
-for i in range(P):
+for _ in range(P):
     santa_idx, ci, cj = map(lambda x: int(x) - 1, input().rstrip().split())
     santas[santa_idx] = [santa_idx, ci, cj]
-    board[ci][cj] = i
+    board[ci][cj] = santa_idx
 
 santa_scores = [0 for _ in range(P)]
 is_retired = [False for _ in range(P)]
