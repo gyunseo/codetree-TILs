@@ -1,7 +1,7 @@
 import heapq
 import sys
 
-# sys.stdin = open("input5.txt", "r")
+# sys.stdin = open("input12.txt", "r")
 input = sys.stdin.readline
 N, M, P, C, D = map(int, input().rstrip().split())
 santas = [None for _ in range(P)]
