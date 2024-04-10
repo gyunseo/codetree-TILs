@@ -4,287 +4,249 @@ import sys
 # sys.stdin = open("input12.txt", "r")
 input = sys.stdin.readline
 N, M, P, C, D = map(int, input().rstrip().split())
-santas = [None for _ in range(P)]
-rudolph_pos = tuple(map(lambda x: int(x) - 1, input().rstrip().split()))
-board = [[None for j in range(N)] for i in range(M)]
-board[rudolph_pos[0]][rudolph_pos[1]] = 100
-rudolph_dirs = [(i, j) for i in (-1, 0, 1) for j in (-1, 0, 1) if i != 0 or j != 0]
-# 상우하좌
-santa_dirs = [(-1, 0), (0, 1), (1, 0), (0, -1)]
+rPos = tuple(map(int, input().rstrip().split()))
+sPoses = [(0, 0) for _ in range(P + 1)]
+scores = [0 for _ in range(P + 1)]
+isRetired = [False for _ in range(P + 1)]
+isStunned = [False for _ in range(P + 1)]
+wakeUpTurn = [0 for _ in range(P + 1)]
+rBoard = [[0 for j in range(N + 1)] for i in range(N + 1)]
+sBoard = [[0 for j in range(N + 1)] for i in range(N + 1)]
+# (충돌유무, 방향, force)
+collision = [[(False, (0, 0), 0) for j in range(N + 1)] for i in range(N + 1)]
+rdi = [-1, 0, 1, 0, -1, -1, 1, 1]
+rdj = [0, 1, 0, -1, 1, -1, 1, -1]
+di = [-1, 0, 1, 0]
+dj = [0, 1, 0, -1]
+for _ in range(P):
+    sIdx, sI, sJ = map(int, input().rstrip().split())
+    sPoses[sIdx] = (sI, sJ)
+    sBoard[sI][sJ] = sIdx
+
+rBoard[rPos[0]][rPos[1]] = 1
 
 
-class cmp_santa:
-    def __init__(self, dist, pos, idx):
+# print(f"루돌프 초기 위치: {rPos}")
+# print("산타들의 초기 위치:", end=" ")
+# print(sPoses[1:])
+# print("-" * 64)
+
+
+class CmpSanta:
+    def __init__(self, dist, ci, cj, sIdx):
         self.dist = dist
-        self.ci = pos[0]
-        self.cj = pos[1]
-        self.idx = idx
+        self.ci = ci
+        self.cj = cj
+        self.sIdx = sIdx
 
     def __lt__(self, other):
         if self.dist < other.dist:
             return True
-        elif self.dist == other.dist:
+        if self.dist == other.dist:
             if self.ci == other.ci:
                 return self.cj > other.cj
             return self.ci > other.ci
-        else:
-            return False
-
-    def __str__(self):
-        return f"dist: {self.dist}, ci: {self.ci}, cj: {self.cj}, idx: {self.idx}"
+        return False
 
 
-def get_dist(pos1, pos2):
-    i1, j1 = pos1
-    i2, j2 = pos2
-    return (i1 - i2) ** 2 + (j1 - j2) ** 2
-
-
-def find_closest_santa(src_pos, target_poses):
+def r_move():
+    """
+    루돌프가 움직인다
+    """
+    global rPos
     h = []
-    ret_idx = -1
-    min_dist = int(1e9)
-    len_targets = len(target_poses)
-    for i in range(len_targets):
-        if is_retired[i]: continue
-        tmp_dist = get_dist(src_pos, target_poses[i])
-        heapq.heappush(h, cmp_santa(tmp_dist, target_poses[i], i))
+    # 가장 가까운 산타를 선택한다
+    for i in range(1, P + 1):
+        if isRetired[i]: continue
+        cSantaI, cSantaJ = sPoses[i]
+        minDist = (rPos[0] - cSantaI) ** 2 + (rPos[1] - cSantaJ) ** 2
+        heapq.heappush(h, CmpSanta(minDist, cSantaI, cSantaJ, i))
+    # 가장 가까운 산타를 하나 뽑는다
+    closest = heapq.heappop(h)
+    closestI, closestJ, closestIdx = closest.ci, closest.cj, closest.sIdx
+    # print(f"가장 가까운 선택한 산타: {closestIdx}, 위치: {closestI, closestJ}")
+    # 10억이면 MAX로 충분
+    minDist = int(1e9)
+    # 루돌프가 움직일 방향
+    rDir = (0, 0)
+    for k in range(8):
+        ni, nj = rPos[0] + rdi[k], rPos[1] + rdj[k]
+        if oob(ni, nj): continue
+        tmpDist = (ni - closestI) ** 2 + (nj - closestJ) ** 2
+        if tmpDist < minDist:
+            minDist = tmpDist
+            rDir = (rdi[k], rdj[k])
+    # print(f"가장 가까운 선택한 산타로 가기 위해 선택한 방향: {rDir}")
+    # 루돌프 보드에서 원래 위치에서 새로 이사 갈 위치로 표시를 해준다
+    nRI, nRJ = rPos[0] + rDir[0], rPos[1] + rDir[1]
+    rBoard[rPos[0]][rPos[1]] = 0
+    rBoard[nRI][nRJ] = 1
 
-    ret = heapq.heappop(h)
-    ret_idx = ret.idx
-    return ret_idx
+    # 충돌 검사를 해준다
+    # 어떤 산타가 있다면
+    # 루돌프가 온 방향으로 산타는 쭉 밀려나야 한다
+    if sBoard[nRI][nRJ]:
+        collision[nRI][nRJ] = (True, rDir, C)
+
+    rPos = (nRI, nRJ)
 
 
-def OOB(i, j):
-    if i < 0 or i >= N: return True
-    if j < 0 or j >= M: return True
-
+def oob(i, j):
+    if i <= 0 or i > N: return True
+    if j <= 0 or j > N: return True
     return False
 
 
-def move_from_cur_to_new(c_pos, n_pos, something):
-    ci, cj = c_pos
-    ni, nj = n_pos
-    board[ci][cj] = None
-    board[ni][nj] = something
-
-
-def rudolph_select_dir(src_pos, santa_pos):
-    h = []
-    ret_dir = (None, None)
-    ci, cj = src_pos
-    dist_from_santa = get_dist(src_pos, santa_pos)
-    for k in range(8):
-        di, dj = rudolph_dirs[k]
-        ni, nj = ci + di, cj + dj
-        if OOB(ni, nj): continue
-        tmp_dist_from_santa = get_dist((ni, nj), santa_pos)
-        if tmp_dist_from_santa < dist_from_santa:
-            dist_from_santa = tmp_dist_from_santa
-            ret_dir = (di, dj)
-    # print(f"루돌프가 선택한 dir: {ret_dir}")
-    return ret_dir
-
-
-# 전파되는 방향, 현재 pos, 밀리는 산타의 idx
-def interact(vec, cur_pos, pushed_santa_idx, turn_th):
-    ci, cj = cur_pos[0], cur_pos[1]
+def interact(sIdx, vec):
+    # 산타의 현재 위치
+    ci, cj = sPoses[sIdx]
+    # 산타의 다음 위치
     ni, nj = ci + vec[0], cj + vec[1]
-    # base condition1
-    # 보드밖으로 나갈 때
-    if OOB(ni, nj):
-        # 밀렸다는 건 민 사람이 있다는 건데 민 사람이 있는 자리를 None으로 만들면 안된다
-        # 내가 갈 자리를 덮어 쓰면 된다
-        is_retired[pushed_santa_idx] = True
-        update_santa_info(pushed_santa_idx, (None, None))
+
+    # 보드밖이면 base condition1
+    if oob(ni, nj):
+        sBoard[ci][cj] = 0
+        sPoses[sIdx] = (0, 0)
+        # 리타이어 이외에는 다 초기값으로 설정해 준다
+        isRetired[sIdx] = True
+        isStunned[sIdx] = False
+        wakeUpTurn[sIdx] = 0
         return
-
-    # base condition2
-    # 밀렸는데 뒤에 사람이 없을 때
-    if board[ni][nj] == None:
-        # 밀렸다는 건 민 사람이 있다는 건데 민 사람이 있는 자리를 None으로 만들면 안된다
-        # 내가 갈 자리를 덮어 쓰면 된다
-        board[ni][nj] = pushed_santa_idx
-        update_santa_info(pushed_santa_idx, (ni, nj))
+    # 다음으로 가는 곳이 아무 산타도 없다면 base condition2
+    if sBoard[ni][nj] == 0:
+        sBoard[ci][cj] = 0
+        sBoard[ni][nj] = sIdx
+        sPoses[sIdx] = (ni, nj)
         return
-
-    # 밀렸는데 뒤에 사람이 있을 때
-    santa_behind_me = board[ni][nj]
-    # 밀렸다는 건 민 사람이 있다는 건데 민 사람이 있는 자리를 None으로 만들면 안된다
-    # 내가 갈 자리를 덮어 쓰면 된다
-    board[ni][nj] = pushed_santa_idx
-    update_santa_info(pushed_santa_idx, (ni, nj))
-    interact(vec, (ni, nj), santa_behind_me, turn_th)
+    # 다음으로 가는 곳에 딴 산타가 있다면
+    nSIdx = sBoard[ni][nj]
+    interact(nSIdx, vec)
+    sBoard[ci][cj] = 0
+    sBoard[ni][nj] = sIdx
+    sPoses[sIdx] = (ni, nj)
 
 
-def update_santa_info(santa_idx, new_pos):
-    santas[santa_idx][1] = new_pos[0]
-    santas[santa_idx][2] = new_pos[1]
+def collide(turn):
+    """
+    collision board를 탐색해서 collide를 검사하고, 상호작용을 일으킨다.
+    """
+    for i in range(1, N + 1):
+        for j in range(1, N + 1):
+            if collision[i][j][0]:
+                # 일단 부딪혔으니깐 점수를 준다
+                sIdx, vec, force = sBoard[i][j], collision[i][j][1], collision[i][j][2]
+                # 현재 산타의 위치
+                cSI, cSJ = sPoses[sIdx][0], sPoses[sIdx][1]
+                # 점수 계산
+                scores[sIdx] += collision[i][j][2]
+                # 포물선으로 날라갈 지점
+                nSI, nSJ = cSI + vec[0] * force, cSJ + vec[1] * force
+                # 리타이어된다면
+                if oob(nSI, nSJ):
+                    sBoard[cSI][cSJ] = 0
+                    sPoses[sIdx] = (0, 0)
+                    # 리타이어 이외에는 다 초기값으로 설정해 준다
+                    isRetired[sIdx] = True
+                    isStunned[sIdx] = False
+                    wakeUpTurn[sIdx] = 0
+                    continue
+                # 상호작용이 일어나야 함
+                if sBoard[nSI][nSJ]:
+                    nSIdx = sBoard[nSI][nSJ]
+                    # 상호작용이 시작되는 산타와 방향을 매개 변수로 전달
+                    interact(nSIdx, vec)
+
+                # 산타 보드 업데이트
+                sBoard[cSI][cSJ] = 0
+                sBoard[nSI][nSJ] = sIdx
+
+                # sPoses 업데이트
+                sPoses[sIdx] = (nSI, nSJ)
+
+                # isStunned 업데이트
+                isStunned[sIdx] = True
+                wakeUpTurn[sIdx] = turn + 2
 
 
-def update_stun(santa_idx, turn_th):
-    is_stunned[santa_idx] = True
-    wake_up_turn_th[santa_idx] = turn_th + 2
-
-
-def push_santa(src_pos, vec, force, pushed_santa_idx, turn_th):
-    # src_pos를 마지막에 100(루돌프)으로 채우고
-    # vec * force 만큼 밀어낸다
-    # c_pos: 루돌프가 있는 곳, santa_pos: 돌진하기 직전에 산타가 있던 곳, n_pos: 루돌프가 산타를 날려 버린 곳
-    ci, cj = src_pos[0], src_pos[1]
-    santa_pos = (santas[pushed_santa_idx][1], santas[pushed_santa_idx][2])
-    ni, nj = ci + vec[0] * force, cj + vec[1] * force
-    # 일단 산타가 있는 곳은 None으로 만든다
-    board[santa_pos[0]][santa_pos[1]] = None
-    # 산타가 날라 갔는데 거기가 board밖이라면?
-    if OOB(ni, nj):
-        is_retired[pushed_santa_idx] = True
-        # move_from_cur_to_new를 못써서 이 한줄로 대체
-        board[santa_pos[0]][santa_pos[1]] = None
-        update_santa_info(pushed_santa_idx, (None, None))
-        board[ci][cj] = 100
-        return
-    # 산타가 날라 갔는데 거기가 공석이라면
-    if board[ni][nj] == None:
-        move_from_cur_to_new(santa_pos, (ni, nj), pushed_santa_idx)
-        # 산타 정보 업데이트
-        update_santa_info(pushed_santa_idx, (ni, nj))
-        update_stun(pushed_santa_idx, turn_th)
-        board[ci][cj] = 100
-        return
-
-    # None이 아닌 뭔가가 있다면
-    if board[ni][nj] != None:
-        # 전파해야 함
-        # 먼저 최초의 밀려난 산타에 대한 처리를 한다
-        santa_behind_me = board[ni][nj]
-        move_from_cur_to_new(santa_pos, (ni, nj), pushed_santa_idx)
-        update_santa_info(pushed_santa_idx, (ni, nj))
-        update_stun(pushed_santa_idx, turn_th)
-        # 날라간 곳으로 부터 연쇄 인터랙트가 시작된다
-        interact(vec, (ni, nj), santa_behind_me, turn_th)
-        board[ci][cj] = 100
-
-
-def rudolph_move(turn_th):
-    global rudolph_pos
-
-    # 아직 retired가 아닌 산타 중에서 가장 가까운 산타를 찾는다
-    santa_poses = [*map(lambda x: (x[1], x[2]), santas)]
-    # print(f"santa_poses: {santa_poses}")
-    # print(f"rudolph_pos: {rudolph_pos}")
-    # 가장 가까운 산타를 찾는다
-    selected_santa_idx = find_closest_santa(rudolph_pos, santa_poses)
-    # 돌진한다
-    selected_santa_i, selected_santa_j = santa_poses[selected_santa_idx]
-    selected_dir = rudolph_select_dir(rudolph_pos, (selected_santa_i, selected_santa_j))
-    if selected_dir == (None, None):
-        print("루돌프가 움직일 dir를 선택하지 못했습니다!")
-        exit(1)
-
-    ci, cj = rudolph_pos
-    ni, nj = ci + selected_dir[0], cj + selected_dir[1]
-    if board[ni][nj] != None:
-        # collide 발생
-        board[ci][cj] = None
-        pushed_santa = board[ni][nj]
-        push_santa((ni, nj), selected_dir, C, pushed_santa, turn_th)
-        # 점수 계산
-        santa_scores[pushed_santa] += C
-        rudolph_pos = (ni, nj)
-
-    else:
-        # 100이 루돌프를 나타냄
-        move_from_cur_to_new((ci, cj), (ni, nj), 100)
-        # update rudolph_pos
-        rudolph_pos = (ni, nj)
-
-
-def santa_select_dir(src_pos):
-    h = []
-    ret_dir = (None, None)
-    ci, cj = src_pos
-    dist_from_rudolph = get_dist(src_pos, rudolph_pos)
+def s_move(sIdx):
+    # 기절했거나 탈락한 산타는 제외
+    if isStunned[sIdx] or isRetired[sIdx]: return
+    cSI, cSJ = sPoses[sIdx]
+    # 산타의 현 위치에서 루돌프까지의 거리
+    minDistFromR = (rPos[0] - cSI) ** 2 + (rPos[1] - cSJ) ** 2
+    sDir = (0, 0)
     for k in range(4):
-        di, dj = santa_dirs[k]
-        ni, nj = ci + di, cj + dj
-        # 보드밖으로 가거나
-        if OOB(ni, nj): continue
-        # 다른 산타가 있으면은
-        if board[ni][nj] != None and board[ni][nj] != 100: continue
-        tmp_dist_from_rudolph = get_dist((ni, nj), rudolph_pos)
-        if tmp_dist_from_rudolph < dist_from_rudolph:
-            dist_from_rudolph = tmp_dist_from_rudolph
-            ret_dir = (di, dj)
-    # print(f"산타가 선택한 dir: {ret_dir}")
-    return ret_dir
+        ni, nj = cSI + di[k], cSJ + dj[k]
+        if oob(ni, nj): continue
+        if sBoard[ni][nj]: continue
+        tmpDist = (rPos[0] - ni) ** 2 + (rPos[1] - nj) ** 2
+        if tmpDist < minDistFromR:
+            minDistFromR = tmpDist
+            sDir = (di[k], dj[k])
+    # 산타는 가까워질 수거 없거나, 움직일 수 있는 칸이 없다면 안 움직일 수도 있다
+    if sDir == (0, 0): return
+    # 가까워지는 칸을 발견했다면
+    nSI, nSJ = cSI + sDir[0], cSJ + sDir[1]
+
+    # 산타 보드에서 이동을 하는데, 루돌프랑 부딪힌다면
+    if rBoard[nSI][nSJ]:
+        collision[nSI][nSJ] = (True, (-sDir[0], -sDir[1]), D)
+
+    sBoard[cSI][cSJ] = 0
+    sBoard[nSI][nSJ] = sIdx
+    sPoses[sIdx] = (nSI, nSJ)
 
 
-def santas_move(turn_th):
-    santa_poses = list(map(lambda x: (x[1], x[2]), santas))
-    for i in range(P):
-        if is_retired[i] or is_stunned[i]:
-            continue
-        selected_dir = santa_select_dir(santa_poses[i])
-        # 가까워지는 선택을 할 수 없거나 딴 산타가 다 점유중이면 continue
-        if selected_dir == (None, None): continue
-        ci, cj = santa_poses[i]
-        ni, nj = ci + selected_dir[0], cj + selected_dir[1]
-        if board[ni][nj] == 100:
-            # 루돌프가 있다는 것 -> collide 발생
-            # print(f"밀려날 산타: {i}, 산타가 돌진했던 방향: {selected_dir}")
-            push_santa((ni, nj), (-selected_dir[0], -selected_dir[1]), D, i, turn_th)
-            santa_scores[i] += D
-        else:
-            move_from_cur_to_new((ci, cj), (ni, nj), i)
-            update_santa_info(i, (ni, nj))
-            # 부딪히지는 않았으니깐 stun은 처리하지 않는다
+def clear_collision():
+    for i in range(1, N + 1):
+        for j in range(1, N + 1):
+            if collision[i][j][0]:
+                collision[i][j] = (False, (0, 0), 0)
 
 
-def wake_up(turn_th):
-    for i in range(P):
-        if is_stunned[i] and wake_up_turn_th[i] == turn_th:
-            is_stunned[i] = False
-            wake_up_turn_th[i] = None
-
-
-def is_game_over():
-    for i in range(P):
-        if not is_retired[i]:
-            return False
-    return True
-
-
-def plus_one_santa_scores():
-    for i in range(P):
-        if not is_retired[i]:
-            santa_scores[i] += 1
+def wake_up(turn):
+    for i in range(1, P + 1):
+        if isStunned[i] and wakeUpTurn[i] == turn:
+            isStunned[i] = False
+            wakeUpTurn[i] = 0
 
 
 def print_board():
-    for i in range(N):
-        for j in range(N):
-            print(board[i][j], end=' ')
+    print("rBoard:")
+    for i in range(1, N + 1):
+        for j in range(1, N + 1):
+            print(rBoard[i][j], end=" ")
+        print()
+    print("sBoard:")
+    for i in range(1, N + 1):
+        for j in range(1, N + 1):
+            print(sBoard[i][j], end=" ")
         print()
 
 
-for _ in range(P):
-    santa_idx, ci, cj = map(lambda x: int(x) - 1, input().rstrip().split())
-    santas[santa_idx] = [santa_idx, ci, cj]
-    board[ci][cj] = santa_idx
-
-santa_scores = [0 for _ in range(P)]
-is_retired = [False for _ in range(P)]
-is_stunned = [False for _ in range(P)]
-wake_up_turn_th = [None for _ in range(P)]
-
-for i in range(M):
-    wake_up(i)
-    rudolph_move(i)
-    santas_move(i)
-    if is_game_over():
+for turn in range(1, M + 1):
+    # print(f"{turn}턴 시작 전:")
+    # print_board()
+    game_end = True
+    wake_up(turn)
+    r_move()
+    collide(turn)
+    clear_collision()
+    for i in range(1, P + 1):
+        s_move(i)
+        collide(turn)
+        clear_collision()
+    # 아직 리타이어 당하지 않은 산타들은 1점씩 얻는다
+    for i in range(1, P + 1):
+        if not isRetired[i]:
+            game_end = False
+            scores[i] += 1
+    if game_end:
         break
-    plus_one_santa_scores()
+    # print(f"{turn}턴 종료 후:")
+    # print_board()
 
-for i in range(P):
-    print(santa_scores[i], end=" ")
+for i, score in enumerate(scores):
+    if i == 0: continue
+    print(score, end=" ")
+print()
