@@ -2,7 +2,7 @@ import heapq
 import sys
 from collections import deque
 
-# sys.stdin = open("input4.txt", "r")
+# sys.stdin = open("input6.txt", "r")
 input = sys.stdin.readline
 N, M, K = map(int, input().rstrip().split())
 board = [[0 for j in range(M + 1)] for i in range(N + 1)]
@@ -39,7 +39,7 @@ class CmpWeak:
                 if self.posSum == other.posSum:
                     return self.j > other.j
 
-                return self.posSum > self.posSum
+                return self.posSum > other.posSum
 
             return self.attackTurn > other.attackTurn
 
@@ -59,7 +59,7 @@ class CmpStrong:
                 if self.posSum == other.posSum:
                     return self.j < other.j
 
-                return self.posSum < self.posSum
+                return self.posSum < other.posSum
 
             return self.attackTurn < other.attackTurn
 
@@ -80,8 +80,8 @@ def select_attacker():
             if board[i][j] <= 0: continue
             heapq.heappush(h, CmpWeak(board[i][j], attackTurnBoard[i][j], i + j, j))
     weakest = heapq.heappop(h)
-    weakestPos = (weakest.posSum - weakest.j, weakest.j)
-    return weakestPos
+    weakest_pos = (weakest.posSum - weakest.j, weakest.j)
+    return weakest_pos
 
 
 def select_attackee(attacker_pos):
@@ -89,7 +89,6 @@ def select_attackee(attacker_pos):
     for i in range(1, N + 1):
         for j in range(1, M + 1):
             if (i, j) == attacker_pos: continue
-            if board[i][j] <= 0: continue
             heapq.heappush(h, CmpStrong(board[i][j], attackTurnBoard[i][j], i + j, j))
     strongest = heapq.heappop(h)
     strongest_pos = (strongest.posSum - strongest.j, strongest.j)
@@ -136,7 +135,7 @@ def laser(attacker_pos, attackee_pos, turn):
                 while (pre_i, pre_j) != attacker_pos:
                     board[pre_i][pre_j] -= attack_ability // 2
                     attackedTurnBoard[pre_i][pre_j] = turn
-
+                    print(f"{(pre_i, pre_j)}에서 레이저 지나가는 길이어서 {attack_ability//2}만큼 까임")
                     pre_i, pre_j = dist[pre_i][pre_j][1], dist[pre_i][pre_j][2]
                 # attacker의 공격력만큼 까임
                 board[ni][nj] -= attack_ability
@@ -187,24 +186,36 @@ def count_unbroken_towers():
                 cnt += 1
     return cnt
 
+def print_strongest_attack_ability():
+    maxAttackAbility = -1
+    pos = (0, 0)
+    for i in range(1, N + 1):
+        for j in range(1, M + 1):
+            if board[i][j] > maxAttackAbility:
+                maxAttackAbility = board[i][j]
+                pos = (i, j)
+    print(f"현재 {pos}에서 {maxAttackAbility}로 가장 높은 공격력을 갖고 있다.")
 
 for turn in range(1, K + 1):
     attackerPos = select_attacker()
     # 공격력 추가
     board[attackerPos[0]][attackerPos[1]] += (N + M)
     attackeePos = select_attackee(attackerPos)
+    print()
+    print(f"{attackerPos}에서 {attackeePos}로 공격합니다. 공격력: {board[attackerPos[0]][attackerPos[1]]}")
     # 레이저 공격에 실패하면은
     if not laser(attackerPos, attackeePos, turn):
         # 폭격으로 공격
+        print("폭격했음")
         canon(attackerPos, attackeePos, turn)
     break_towers()
     # 안 부서진 포탑이 1개가 되면 게임 바로 종료
     if count_unbroken_towers() == 1:
         break
 
-    # print("-" * 64)
-    # print(f"{turn}턴 공격후: 재정비 전")
-    # print_board()
+    print("-" * 64)
+    print(f"{turn}턴 공격후: 재정비 전")
+    print_board()
     # 포탑 재정비
     for i in range(1, N + 1):
         for j in range(1, M + 1):
@@ -212,9 +223,10 @@ for turn in range(1, K + 1):
             if attackedTurnBoard[i][j] == turn or attackTurnBoard[i][j] == turn:
                 continue
             board[i][j] += 1
-    # print("-" * 64)
-    # print(f"{turn}턴 공격후: 재정비 후")
-    # print_board()
+    print("-" * 64)
+    print(f"{turn}턴 공격후: 재정비 후")
+    print_board()
+    print_strongest_attack_ability()
 
 
 
