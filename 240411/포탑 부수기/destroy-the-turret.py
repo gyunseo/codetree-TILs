@@ -2,7 +2,7 @@ import heapq
 import sys
 from collections import deque
 
-# sys.stdin = open("input3.txt", "r")
+# sys.stdin = open("input4.txt", "r")
 input = sys.stdin.readline
 N, M, K = map(int, input().rstrip().split())
 board = [[0 for j in range(M + 1)] for i in range(N + 1)]
@@ -120,9 +120,9 @@ def laser(attacker_pos, attackee_pos, turn):
             ni, nj = ci + di[k], cj + dj[k]
 
             if oob_i(ni):
-                ni = ni % N
+                ni = ni % N if ni > 0 else N
             if oob_j(nj):
-                nj = nj % M
+                nj = nj % M if nj > 0 else M
             # 부서진 포탑이 있는 곳은 못 가
             if board[ni][nj] <= 0: continue
             # 이미 갔던 곳도 안돼 이건 당연
@@ -161,9 +161,9 @@ def canon(attacker_pos, attackee_pos, turn):
         ni, nj = attackee_pos[0] + canonDI[k], attackee_pos[1] + canonDJ[k]
 
         if oob_i(ni):
-            ni = ni % N
+            ni = ni % N if ni > 0 else N
         if oob_j(nj):
-            nj = nj % M
+            nj = nj % M if nj > 0 else M
         # 공격자는 폭격에서 영향을 안 받는다
         if (ni, nj) == attacker_pos: continue
 
