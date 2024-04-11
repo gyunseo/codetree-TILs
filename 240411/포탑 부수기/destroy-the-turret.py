@@ -201,20 +201,20 @@ for turn in range(1, K + 1):
     # 공격력 추가
     board[attackerPos[0]][attackerPos[1]] += (N + M)
     attackeePos = select_attackee(attackerPos)
-    print()
-    print(f"{attackerPos}에서 {attackeePos}로 공격합니다. 공격력: {board[attackerPos[0]][attackerPos[1]]}")
+    # print()
+    # print(f"{attackerPos}에서 {attackeePos}로 공격합니다. 공격력: {board[attackerPos[0]][attackerPos[1]]}")
     # 레이저 공격에 실패하면은
     if not laser(attackerPos, attackeePos, turn):
         # 폭격으로 공격
-        print("폭격했음")
+        # print("폭격했음")
         canon(attackerPos, attackeePos, turn)
     break_towers()
     # 안 부서진 포탑이 1개가 되면 게임 바로 종료
     if count_unbroken_towers() == 1:
         break
 
-    print("-" * 64)
-    print(f"{turn}턴 공격후: 재정비 전")
+    # print("-" * 64)
+    # print(f"{turn}턴 공격후: 재정비 전")
     print_board()
     # 포탑 재정비
     for i in range(1, N + 1):
@@ -223,8 +223,8 @@ for turn in range(1, K + 1):
             if attackedTurnBoard[i][j] == turn or attackTurnBoard[i][j] == turn:
                 continue
             board[i][j] += 1
-    print("-" * 64)
-    print(f"{turn}턴 공격후: 재정비 후")
+    # print("-" * 64)
+    # print(f"{turn}턴 공격후: 재정비 후")
     print_board()
     print_strongest_attack_ability()
 
