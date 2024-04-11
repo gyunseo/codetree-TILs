@@ -1,7 +1,7 @@
 import heapq
 import sys
 
-sys.stdin = open("input1.txt", "r")
+# sys.stdin = open("input1.txt", "r")
 input = sys.stdin.readline
 DEBUG = print
 
