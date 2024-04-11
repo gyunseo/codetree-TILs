@@ -2,7 +2,7 @@ import heapq
 import sys
 from collections import deque
 
-# sys.stdin = open("input2.txt", "r")
+# sys.stdin = open("input3.txt", "r")
 input = sys.stdin.readline
 N, M, K = map(int, input().rstrip().split())
 board = [[0 for j in range(M + 1)] for i in range(N + 1)]
@@ -96,8 +96,10 @@ def select_attackee(attacker_pos):
     return strongest_pos
 
 
-def oob(ci, cj):
+def oob_i(ci):
     if ci <= 0 or ci > N: return True
+    return False
+def oob_j(cj):
     if cj <= 0 or cj > M: return True
     return False
 
@@ -117,8 +119,9 @@ def laser(attacker_pos, attackee_pos, turn):
         for k in range(4):
             ni, nj = ci + di[k], cj + dj[k]
 
-            if oob(ni, nj):
+            if oob_i(ni):
                 ni = ni % N
+            if oob_j(nj):
                 nj = nj % M
             # 부서진 포탑이 있는 곳은 못 가
             if board[ni][nj] <= 0: continue
@@ -156,11 +159,14 @@ def canon(attacker_pos, attackee_pos, turn):
     # 주변부 폭격
     for k in range(8):
         ni, nj = attackee_pos[0] + canonDI[k], attackee_pos[1] + canonDJ[k]
+
+        if oob_i(ni):
+            ni = ni % N
+        if oob_j(nj):
+            nj = nj % M
         # 공격자는 폭격에서 영향을 안 받는다
         if (ni, nj) == attacker_pos: continue
-        if oob(ni, nj):
-            ni = ni % N
-            nj = nj % M
+
         # 이미 부서진 거는 볼 필요가 없다
         if board[ni][nj] <= 0: continue
         # 절반만 까준다
@@ -181,6 +187,7 @@ def count_unbroken_towers():
                 cnt += 1
     return cnt
 
+
 for turn in range(1, K + 1):
     attackerPos = select_attacker()
     # 공격력 추가
@@ -195,6 +202,9 @@ for turn in range(1, K + 1):
     if count_unbroken_towers() == 1:
         break
 
+    # print("-" * 64)
+    # print(f"{turn}턴 공격후: 재정비 전")
+    # print_board()
     # 포탑 재정비
     for i in range(1, N + 1):
         for j in range(1, M + 1):
@@ -202,6 +212,9 @@ for turn in range(1, K + 1):
             if attackedTurnBoard[i][j] == turn or attackTurnBoard[i][j] == turn:
                 continue
             board[i][j] += 1
+    # print("-" * 64)
+    # print(f"{turn}턴 공격후: 재정비 후")
+    # print_board()
 
 
 
