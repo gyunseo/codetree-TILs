@@ -2,7 +2,7 @@ import heapq
 import sys
 from collections import deque
 
-sys.stdin = open("input6.txt", "r")
+# sys.stdin = open("input6.txt", "r")
 input = sys.stdin.readline
 N, M, K = map(int, input().rstrip().split())
 board = [[0 for j in range(M + 1)] for i in range(N + 1)]
