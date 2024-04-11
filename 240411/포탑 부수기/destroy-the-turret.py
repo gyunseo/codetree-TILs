@@ -135,7 +135,7 @@ def laser(attacker_pos, attackee_pos, turn):
                 while (pre_i, pre_j) != attacker_pos:
                     board[pre_i][pre_j] -= attack_ability // 2
                     attackedTurnBoard[pre_i][pre_j] = turn
-                    print(f"{(pre_i, pre_j)}에서 레이저 지나가는 길이어서 {attack_ability//2}만큼 까임")
+                    # print(f"{(pre_i, pre_j)}에서 레이저 지나가는 길이어서 {attack_ability//2}만큼 까임")
                     pre_i, pre_j = dist[pre_i][pre_j][1], dist[pre_i][pre_j][2]
                 # attacker의 공격력만큼 까임
                 board[ni][nj] -= attack_ability
