@@ -2,7 +2,7 @@ import heapq
 import sys
 from collections import deque
 
-# sys.stdin = open("input6.txt", "r")
+sys.stdin = open("input6.txt", "r")
 input = sys.stdin.readline
 N, M, K = map(int, input().rstrip().split())
 board = [[0 for j in range(M + 1)] for i in range(N + 1)]
@@ -215,7 +215,7 @@ for turn in range(1, K + 1):
 
     # print("-" * 64)
     # print(f"{turn}턴 공격후: 재정비 전")
-    print_board()
+    # print_board()
     # 포탑 재정비
     for i in range(1, N + 1):
         for j in range(1, M + 1):
@@ -225,8 +225,8 @@ for turn in range(1, K + 1):
             board[i][j] += 1
     # print("-" * 64)
     # print(f"{turn}턴 공격후: 재정비 후")
-    print_board()
-    print_strongest_attack_ability()
+    # print_board()
+    # print_strongest_attack_ability()
 
 
 
