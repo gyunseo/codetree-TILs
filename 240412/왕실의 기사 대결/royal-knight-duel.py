@@ -1,7 +1,7 @@
 import sys
 from collections import deque
 
-# sys.stdin = open("input1.txt", "r")
+# sys.stdin = open("input8.txt", "r")
 input = sys.stdin.readline
 DEBUG = print
 
@@ -25,7 +25,7 @@ class Knight:
         ci, cj = pos
         for i in range(ci, ci + h):
             for j in range(cj, cj + w):
-                kBoard[i][j] = idx
+                kBoard[i][j] = self.idx
 
     def update_pos(self, new_pos):
         pass
@@ -61,21 +61,26 @@ class Knight:
                 kBoard[i][j] = self.idx
 
     def can_move(self, d):
+        if self.retired: return False
         q = deque()
         dist = [[0 for j in range(L + 1)] for i in range(L + 1)]
         q.append(self.pos)
         dist[self.pos[0]][self.pos[1]] = 1
         while q:
             ci, cj = q.popleft()
-            for k in range(4):
-                ni, nj = ci + DI[k], cj + DJ[k]
+            for direction in range(4):
+                ni, nj = ci + DI[direction], cj + DJ[direction]
+
                 if oob(ni, nj):
                     # 방향이 d이랑 일치한다면 oob도 벽 취급
-                    if k == d: return False
+                    if direction == d:
+                        return False
                     continue
                 # d 방향일 때 다음 칸이 벽이라면 못 움직인다
-                if k == d and board[ni][nj] == 2: return False
-                if kBoard[ni][nj] <= 0: continue
+                if direction == d and board[ni][nj] == 2: return False
+                if kBoard[ni][nj] == 0: continue
+                if kBoard[ci][cj] != kBoard[ni][nj] and direction != d: continue
+
                 if dist[ni][nj] > 0: continue
 
                 dist[ni][nj] = dist[ci][cj] + 1
@@ -85,18 +90,21 @@ class Knight:
 
     def move(self, d, turn):
         # 이미 체스판 밖에 있는 기사에게 명령을 내려도 의미가 없음
-        if self.retired: return False
+        # if self.retired:
+        #     return False
         ci, cj = self.pos
         new_anchor = ci + DI[d], cj + DJ[d]
         # 새로운 anchor 좌표가 OOB인지 확인 (base condition #1)
-        if oob(new_anchor[0], new_anchor[1]): return False
+        # if oob(new_anchor[0], new_anchor[1]):
+        #     return False
         # 이동하려는 칸에 벽(은 oob도 포함이다)이 하나라도 있는지 확인 (base condition #2)
-        if self.check_any_wall_in_board(new_anchor): return False
+        # if self.check_any_wall_in_board(new_anchor):
+        #     return False
         # 이동하려는 곳에 벽도 없다면, 딴 기사가 점유하고 있는지 확인
         knight_list = list(self.check_any_other_knight(new_anchor))
         knight_list.sort()
         # 점유 하고 있는 딴 기사가 없다면 (base condition #3)
-        if len(knight_list) <= 0:
+        if len(knight_list) == 0:
             self.clear_cur_pos_in_kBoard()
             self.update_by_new_anchor_in_kBoard(new_anchor)
             # self.pos 업데이트
@@ -118,7 +126,9 @@ class Knight:
         return True
 
     def get_damage(self, turn):
-        if self.movedWhen != turn: return
+        if self.retired: return
+        if self.movedWhen != turn:
+            return
         ci, cj = self.pos
         cnt = 0
         for i in range(ci, ci + self.h):
@@ -137,8 +147,9 @@ class Knight:
             self.pos = (0, 0)
             self.h = 0
             self.w = 0
-            self.hp = 0
             self.retired = True
+            # DEBUG(f"{self.idx} 기사 out!, 현재 체력: {self.hp}")
+            # exit(1)
 
     def __str__(self):
         return f"idx: {self.idx}, pos: {self.pos}, h: {self.h}, w: {self.w}, hp: {self.hp}, retired: {self.retired}, damagedMount: {self.damagedMount}, movedWhen: {self.movedWhen}"
@@ -184,20 +195,19 @@ for q in range(1, Q + 1):
     # DEBUG_kBoard()
     knightIdx, kDir = map(int, input().rstrip().split())
     # 기사가 이동하려는 방향 끝에 벽이 있는지 없는지 확인
-    if knights[knightIdx].can_move(kDir):
+    if not knights[knightIdx].retired and knights[knightIdx].can_move(kDir):
         knights[knightIdx].move(kDir, q)
-        # DEBUG(f"{q}번 이동후 :")
-        # DEBUG_kBoard()
         for idx in range(1, N + 1):
-            if idx == knightIdx: continue
+            if idx == knightIdx:
+                continue
             knights[idx].get_damage(q)
-    # DEBUG(f"{q}번 명령 수행후 :")
-    # DEBUG("-" * 64)
-    # DEBUG_board()
-    # DEBUG("-" * 64)
-    # DEBUG_kBoard()
-    # for knight in knights[1:]:
-    #     DEBUG(knight)
+#     DEBUG(f"{q}번 명령 수행후 :")
+#     DEBUG("-" * 64)
+#     DEBUG_board()
+#     DEBUG("-" * 64)
+#     DEBUG_kBoard()
+#     for knight in knights[1:]:
+#         DEBUG(knight)
 
 ans = 0
 for knight in knights[1:]:
