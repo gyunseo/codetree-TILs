@@ -1,6 +1,6 @@
 import heapq
 
-# sys.stdin = open("input1.txt", "r")
+# sys.stdin = open("input4.txt", "r")
 
 DEBUG = print
 
@@ -99,7 +99,7 @@ for i in range(1, m + 1):
     targetI, targetJ = map(int, input().rstrip().split())
     persons.append(Person(i, (targetI, targetJ)))
 
-timer = 0
+timer = 1
 while True:
     for idx in range(1, m + 1):
         persons[idx].move()
