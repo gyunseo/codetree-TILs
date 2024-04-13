@@ -1,8 +1,7 @@
 import heapq
 from collections import deque
 
-# sys.stdin = open("input5.txt", "r")
-
+# sys.stdin = open("input98.txt", "r")
 DEBUG = print
 
 
@@ -38,36 +37,34 @@ class Person:
         if not self.inOfBound: return
         if self.visitedTarget: return
         ci, cj = self.curPos
-        h = []
-        for k in range(4):
-            ni, nj = ci + DI[k], cj + DJ[k]
-            if OOB(ni, nj): continue
-            if isVisited[ni][nj]: continue
-            tmp_dist = abs(ni - self.targetPos[0]) + abs(nj - self.targetPos[1])
-            heapq.heappush(h, CmpPos(tmp_dist, ni, nj))
-        closest = heapq.heappop(h)
-        self.curPos = closest.i, closest.j
+        tmp_dist, n_pos = self.check_reachable_with_dist_pre(self.curPos)
+        self.curPos = n_pos
 
     def make_target_pos_unreachable(self):
         if self.curPos == self.targetPos:
             isVisited[self.curPos[0]][self.curPos[1]] = True
             self.visitedTarget = True
 
-    def check_reachable_with_dist(self, base_camp_pos):
+    def check_reachable_with_dist_pre(self, src):
         q = deque()
-        q.append(base_camp_pos)
-        dist = [[0 for j in range(n + 1)] for i in range(n + 1)]
-        dist[base_camp_pos[0]][base_camp_pos[1]] = 1
+        q.append(src)
+        dist = [[(0, (0, 0)) for j in range(n + 1)] for i in range(n + 1)]
+        dist[src[0]][src[1]] = (1, (0, 0))
         while q:
             ci, cj = q.popleft()
             for k in range(4):
                 ni, nj = ci + DI[k], cj + DJ[k]
                 if OOB(ni, nj): continue
-                if isVisited[ni][nj] or dist[ni][nj] > 0: continue
-                dist[ni][nj] = dist[ci][cj] + 1
+                if isVisited[ni][nj] or dist[ni][nj][0] > 0: continue
+                dist[ni][nj] = (dist[ci][cj][0] + 1, (ci, cj))
                 q.append((ni, nj))
 
-        return dist[self.targetPos[0]][self.targetPos[1]]
+        cur = self.targetPos
+        pre = dist[self.targetPos[0]][self.targetPos[1]][-1]
+        while pre != self.curPos:
+            cur = pre
+            pre = dist[pre[0]][pre[1]][-1]
+        return dist[self.targetPos[0]][self.targetPos[1]][0], cur
 
     def go_to_basecamp(self):
         if self.inOfBound: return
@@ -78,7 +75,7 @@ class Person:
             bsc_i, bsc_j = base_camp_pos
             # 이미 isVisited된 거는 패스해야 된다.
             if isVisited[bsc_i][bsc_j]: continue
-            tmp_dist = self.check_reachable_with_dist(base_camp_pos)
+            tmp_dist, _ = self.check_reachable_with_dist_pre(base_camp_pos)
             if tmp_dist <= 0: continue
             heapq.heappush(h, CmpPos(tmp_dist, bsc_i, bsc_j))
         closest = heapq.heappop(h)
@@ -139,9 +136,9 @@ for i in range(1, m + 1):
 
 timer = 1
 while True:
-    # DEBUG(f"{timer}분 이동 전: ")
-    # DEBUG_isVisited()
-    # DEBUG_persons()
+    #     DEBUG(f"{timer}분 이동 전: ")
+    #     DEBUG_isVisited()
+    #     DEBUG_persons()
     for idx in range(1, m + 1):
         persons[idx].move()
 
@@ -160,9 +157,9 @@ while True:
 
     if game_end:
         break
-    # DEBUG(f"{timer}분 이동 후: ")
-    # DEBUG_isVisited()
-    # DEBUG_persons()
+    #     DEBUG(f"{timer}분 이동 후: ")
+    #     DEBUG_isVisited()
+    #     DEBUG_persons()
     timer += 1
 
 # DEBUG("-" * 64)
