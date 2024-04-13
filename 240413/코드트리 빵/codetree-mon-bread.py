@@ -1,6 +1,7 @@
 import heapq
+from collections import deque
 
-# sys.stdin = open("input4.txt", "r")
+# sys.stdin = open("input5.txt", "r")
 
 DEBUG = print
 
@@ -52,6 +53,22 @@ class Person:
             isVisited[self.curPos[0]][self.curPos[1]] = True
             self.visitedTarget = True
 
+    def check_reachable_with_dist(self, base_camp_pos):
+        q = deque()
+        q.append(base_camp_pos)
+        dist = [[0 for j in range(n + 1)] for i in range(n + 1)]
+        dist[base_camp_pos[0]][base_camp_pos[1]] = 1
+        while q:
+            ci, cj = q.popleft()
+            for k in range(4):
+                ni, nj = ci + DI[k], cj + DJ[k]
+                if OOB(ni, nj): continue
+                if isVisited[ni][nj] or dist[ni][nj] > 0: continue
+                dist[ni][nj] = dist[ci][cj] + 1
+                q.append((ni, nj))
+
+        return dist[self.targetPos[0]][self.targetPos[1]]
+
     def go_to_basecamp(self):
         if self.inOfBound: return
         if self.visitedTarget: return
@@ -61,7 +78,8 @@ class Person:
             bsc_i, bsc_j = base_camp_pos
             # 이미 isVisited된 거는 패스해야 된다.
             if isVisited[bsc_i][bsc_j]: continue
-            tmp_dist = abs(bsc_i - self.targetPos[0]) + abs(bsc_j - self.targetPos[1])
+            tmp_dist = self.check_reachable_with_dist(base_camp_pos)
+            if tmp_dist <= 0: continue
             heapq.heappush(h, CmpPos(tmp_dist, bsc_i, bsc_j))
         closest = heapq.heappop(h)
         # 사람의 현재 위치 갱신
@@ -76,10 +94,28 @@ class Person:
 
 
 def DEBUG_board():
+    print("-" * 64)
+    print("board:")
     for i in range(1, n + 1):
         for j in range(1, n + 1):
             print(board[i][j], end=" ")
         print()
+
+
+def DEBUG_isVisited():
+    print("-" * 64)
+    print("isVisited:")
+    for i in range(1, n + 1):
+        for j in range(1, n + 1):
+            print(isVisited[i][j], end=" ")
+        print()
+
+
+def DEBUG_persons():
+    print("-" * 64)
+    print("persons:")
+    for person in persons[1:]:
+        print(person)
 
 
 DI = (-1, 0, 0, 1)
@@ -99,8 +135,13 @@ for i in range(1, m + 1):
     targetI, targetJ = map(int, input().rstrip().split())
     persons.append(Person(i, (targetI, targetJ)))
 
+# DEBUG_board()
+
 timer = 1
 while True:
+    # DEBUG(f"{timer}분 이동 전: ")
+    # DEBUG_isVisited()
+    # DEBUG_persons()
     for idx in range(1, m + 1):
         persons[idx].move()
 
@@ -119,6 +160,9 @@ while True:
 
     if game_end:
         break
+    # DEBUG(f"{timer}분 이동 후: ")
+    # DEBUG_isVisited()
+    # DEBUG_persons()
     timer += 1
 
 # DEBUG("-" * 64)
