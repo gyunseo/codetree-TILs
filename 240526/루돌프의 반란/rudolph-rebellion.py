@@ -21,13 +21,15 @@ class cmp_santa:
         self.idx = idx
 
     def __lt__(self, other):
-        if self.dist == other.dist:
+        if self.dist < other.dist:
+            return True
+        elif self.dist == other.dist:
             if self.ci == other.ci:
                 return self.cj > other.cj
             return self.ci > other.ci
-            
-        return self.dist < other.dist
-     
+        else:
+            return False
+
     def __str__(self):
         return f"dist: {self.dist}, ci: {self.ci}, cj: {self.cj}, idx: {self.idx}"
 
