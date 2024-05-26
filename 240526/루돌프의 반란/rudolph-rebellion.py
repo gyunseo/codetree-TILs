@@ -40,13 +40,11 @@ class CmpSanta:
         self.sIdx = sIdx
 
     def __lt__(self, other):
-        if self.dist < other.dist:
-            return True
         if self.dist == other.dist:
             if self.ci == other.ci:
                 return self.cj > other.cj
             return self.ci > other.ci
-        return False
+        return self.dist < other.dist
 
 
 def r_move():
